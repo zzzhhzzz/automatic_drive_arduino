@@ -1,0 +1,315 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>esp32 WEB</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  { font-family: sans-serif; background: #eee; padding: 1rem; }
+  body { max-width: 1200px; margin: 0 auto; background: rgb(205, 204, 204); }
+  nav{
+  background-color: rgba(255, 255, 255, 0.83);
+  }
+  nav h1 { 
+      flex: auto; margin: 0; 
+      color: #000000; 
+      font: 1em lucida-grande;
+      font-size: 32px;
+      font-weight: 1000;
+      margin-left: 0.3em;
+  }
+  .content { padding: 0 1rem 1rem; }
+  .content > header { 
+      /* border-bottom: 2px solid rgba(115, 133, 159, 0.5); */
+      display: flex; align-items: flex-end; 
+      /* background-color: #9fb2bb; */
+  }
+  .content > header h1 { 
+        font-family: 'Nunito';
+        font-weight: 700;
+        font-size: 25px;
+        color: #000000;
+        margin-bottom: 25px;
+        text-transform: capitalize;
+  }
+  .content p {
+      margin: 5px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 16px;
+      font-weight: bold;
+      line-height: 30px;
+  }
+
+  .content input[type=button] { 
+      align-self: start; min-width: 6em; min-height: 6em; 
+      font: 1em ;
+      font-size: 12px;
+      font-weight: 1000;
+      border: 8px;
+      border-radius: 0.4em;
+      background: rgba(58, 50, 50, 0.25);
+  }
+  .content input[type=button]:active {
+      background: rgba(255, 255, 255, 0.507);
+  }
+</style>
+</head>
+<body>
+  <nav>
+    <h1 align="center">esp32 WEB Control</h1>
+  </nav>
+  
+  <section class="content">
+    <header>
+        <h1 align="center">Basic Control</h1>
+    </header>
+    <p align="center">
+      <input type="button" name="Front Light" value="LED1" id="front_light">
+      <input type="button" name="Brake Light" value="LED2" id="brake_light">
+    </p>
+    <script>
+      var xhttp = new XMLHttpRequest();
+      document.getElementById('front_light').onclick = function() {
+        xhttp.open("POST", "/front_light");
+        xhttp.send();
+        console.log('toggle front light');
+      }
+      document.getElementById('brake_light').onclick = function() {
+        xhttp.open("POST", "/back_light");
+        xhttp.send();
+        console.log('toggle back light');
+      }
+    </script>
+    <br>
+    <!--
+    <header>
+        <h1 align="center">Move</h1>
+    </header>
+    <p align="center">
+      Real-Time Speed From Encoder: <span id="encoder_span">0.0</span>
+    </p>
+    -->
+    <script>
+      var xhttp_recorder = new XMLHttpRequest();
+      xhttp_recorder.onreadystatechange = function() {
+        if (xhttp_recorder.status === 200) {
+          document.getElementById('encoder_span').innerHTML = this.responseText;
+        }
+      }
+      function refresh_speed() {
+        xhttp_recorder.open("GET", "/get_encoder");
+        xhttp_recorder.send();
+      }
+      setInterval(refresh_speed, 200);
+    </script>
+    
+    <p align="center">
+      Speed Control:
+      <input class="slider" type="range" min="30" max="100" value="60" step="10" id="speed">
+      <span id="speed_span"></span>
+      <br>
+      Angle Control:
+      <input class="slider" type="range" min="15" max="45" value="15" step="30" id="angle">
+      <span id="angle_span"></span>
+      <style>
+        input[type=range] {
+            -webkit-appearance: none;
+            background-color: rgba(162, 163, 163, 0.5);
+            height: 4px;
+            width: 200px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            border-radius: 10px;
+            background: rgb(0, 0, 0);
+            width: 10px;
+            height: 10px;
+        }
+      </style>
+      <script>
+        var xhttp = new XMLHttpRequest();
+        document.getElementById('speed_span').innerHTML = 60;
+        document.getElementById('angle_span').innerHTML = 15;
+        var motor_speed = document.getElementById('speed');
+        var servo_angle = document.getElementById('angle');
+        var current;
+        motor_speed.oninput = function() {
+          current = this.value;
+          document.getElementById('speed_span').innerHTML = current;
+        }
+        servo_angle.oninput = function() {
+          current = this.value;
+          document.getElementById('angle_span').innerHTML = current;
+        }
+        motor_speed.onchange = function() {
+          current = this.value;
+          xhttp.open("POST", "/change_speed?speed=" + current.toString());
+          xhttp.send();
+          console.log('change speed');
+        }
+        servo_angle.onchange = function() {
+          current = this.value;
+          xhttp.open("POST", "/change_turn_angle?angle=" + current.toString());
+          xhttp.send();
+          console.log('change turn angle');
+        }
+      </script>
+    </p>
+    <br>
+    
+    <p align="center">
+      <input type="button" name="Straight" value="Straight" id="straight">
+      <input type="button" name="Forward" value="Forward" id="forward">
+      <input type="button" name="Stop" value="Stop" id="stop">
+    </p>
+    <p align="center">
+      <input type="button" name="Left" value="Left" id="left">
+      <input type="button" name="Backward" value="Stop" id="backward">
+      <input type="button" name="Right" value="Right" id="right">
+    </p>
+    <script>
+      // XMLHttpRequest 在不刷新页面的情况下请求特定 URL，获取数据
+      var xhttp = new XMLHttpRequest();
+      // button elements
+      var forward_button = document.getElementById('forward');
+      var backward_button = document.getElementById('backward');
+      var stop_button = document.getElementById('stop');
+      var left_button = document.getElementById('left');
+      var right_button = document.getElementById('right');
+      var straight_button = document.getElementById('straight');
+      
+      forward_button.onclick = function() {
+        xhttp.open("POST", "/forward");
+        xhttp.send();
+        console.log('move forward');
+      }
+      backward_button.onclick = function() {
+        xhttp.open("POST", "/backward");
+        xhttp.send();
+        console.log('move backward');
+      }
+      stop_button.onclick = function() {
+        xhttp.open("POST", "/stop");
+        xhttp.send();
+        console.log('stop');
+      }
+      left_button.onclick = function() {
+        xhttp.open("POST", "/left");
+        xhttp.send();
+        console.log('left');
+      }
+      right_button.onclick = function() {
+        xhttp.open("POST", "/right");
+        xhttp.send();
+        console.log('right');
+      }
+      straight_button.onclick = function() {
+        xhttp.open("POST", "/straight");
+        xhttp.send();
+        console.log('straight');
+      }
+    </script>
+  </section>
+  <section class="content">
+    <header>
+      <h1 align="center">Information monitoring</h1>
+    </header>
+    <p align="center">
+      Real-Time Speed: <span id="encoder_span">0.0</span>
+    </p>
+    <p align="center">
+      <img src="http://192.168.4.5/capture" id="photo" width=300em>
+      <br>
+      <input type="button" id="start_stream" name="Start Stream" value="Start Stream">
+      <input type="button" id="stop_stream" name="Stop Stream" value="Stop Stream">
+    </p>
+    <script>
+      var isStreaming = true;
+      var isRecording = false;
+      document.getElementById('start_stream').onclick = function() {
+        isStreaming = true;
+      }
+      document.getElementById('stop_stream').onclick = function() {
+        isStreaming = false;
+      }
+      function refresh_img() {
+        if (isStreaming && (!isRecording)) {
+          document.getElementById("photo").src = "http://192.168.4.5/capture"
+                                                 + '?_=' + (new Date()).getTime();
+        }
+      }
+      setInterval(refresh_img, 2000);
+    </script>
+    <br>
+    <p align="center">
+      Record Time(minute):
+      <input class="slider" type="range" min="1" max="10" value="2" step="1" id="record_time">
+      <span id="record_time_span"></span>
+      <br>
+      Record Interval(second):
+      <input class="slider" type="range" min="5" max="20" value="5" step="1" id="record_interval">
+      <span id="record_interval_span"></span>
+      <style>
+        input[type=range] {
+            -webkit-appearance: none;
+            background-color: rgba(162, 163, 163, 0.5);
+            height: 4px;
+            width: 200px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            border-radius: 10px;
+            background: rgb(0, 0, 0);
+            width: 10px;
+            height: 10px;
+        }
+      </style>
+      <script>
+        document.getElementById('record_time_span').innerHTML = 2;
+        document.getElementById('record_interval_span').innerHTML = 5;
+        var record_time = document.getElementById('record_time');
+        var record_interval = document.getElementById('record_interval');
+        var current;
+        record_time.oninput = function() {
+          current = this.value;
+          document.getElementById('record_time_span').innerHTML = current;
+        }
+        record_interval.oninput = function() {
+          current = this.value;
+          document.getElementById('record_interval_span').innerHTML = current;
+        }
+      </script>
+    </p>
+
+    <p align="center">
+      <input type="button" name="Start Record" value="Start Record" id="start_record">
+      <input type="button" name="Stop Record" value="Stop Record" id="stop_record">
+      <script>
+        // XMLHttpRequest 在不刷新页面的情况下请求特定 URL，获取数据
+        var xhttp = new XMLHttpRequest();
+        document.getElementById('start_record').onclick = function() {
+          xhttp.open("GET", "http://192.168.4.5/record?record_time="
+                            + document.getElementById('record_time_span').innerHTML.toString() 
+                            + "&record_interval=" 
+                            + document.getElementById('record_interval_span').innerHTML.toString() 
+          );
+          xhttp.send();
+          isRecording = true;
+          function set_isRecording_false() {
+            isRecording = false;
+            console.log("Stop record. You can get ip camera stream now.");
+          }
+          setTimeout(set_isRecording_false, document.getElementById('record_time_span').innerHTML * 60 * 1000);
+          console.log("Start record... Can't get ip camera stream now.");
+        }
+        document.getElementById('stop_record').onclick = function() {
+          isRecording = false;
+          xhttp.open("GET", "http://192.168.4.5/stop_record");
+          xhttp.send();
+          console.log("Stop record. You can get ip camera stream now.");
+        }
+      </script>
+    </p>
+
+  </section>
+</body>
+</html>)rawliteral";
